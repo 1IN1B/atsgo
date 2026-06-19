@@ -1,0 +1,33 @@
+{
+  "name": "atsgo",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@ai-sdk/alibaba": "^1.0.28",
+    "@better-auth/drizzle-adapter": "^1.6.18",
+    "@libsql/client": "^0.17.3",
+    "@nuxt/fonts": "^0.14.0",
+    "@nuxt/ui": "^4.8.2",
+    "ai": "^6.0.204",
+    "better-auth": "^1.6.18",
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
+    "kysely": "^0.29.2",
+    "nuxt": "^4.1.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2"
+  }
+}

@@ -1,0 +1,217 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  /* Zinc Color Palette - Cool grays with slight blue undertone */
+  --color-zinc-50: #fafafa;
+  --color-zinc-100: #f4f4f5;
+  --color-zinc-200: #e4e4e7;
+  --color-zinc-300: #d4d4d8;
+  --color-zinc-400: #a1a1aa;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #52525b;
+  --color-zinc-700: #3f3f46;
+  --color-zinc-800: #27272a;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+
+  /* Dark mode zinc variants */
+  --color-zinc-50-dark: #0a0a0a;
+  --color-zinc-100-dark: #141414;
+  --color-zinc-200-dark: #1f1f1f;
+  --color-zinc-300-dark: #292929;
+  --color-zinc-400-dark: #333333;
+  --color-zinc-500-dark: #3d3d3d;
+  --color-zinc-600-dark: #474747;
+  --color-zinc-700-dark: #525252;
+  --color-zinc-800-dark: #5c5c5c;
+  --color-zinc-900-dark: #666666;
+  --color-zinc-950-dark: #707070;
+
+  /* Animation durations */
+  --animate-duration-fast: 150ms;
+  --animate-duration-normal: 300ms;
+  --animate-duration-slow: 500ms;
+
+  /* Easing functions */
+  --animate-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --animate-ease-in: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* Custom animation utilities */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-fade-out {
+    animation: fadeOut var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-slide-up {
+    animation: slideUp var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-slide-down {
+    animation: slideDown var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-scale-in {
+    animation: scaleIn var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-scale-out {
+    animation: scaleOut var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-pulse-soft {
+    animation: pulseSoft 2s var(--animate-ease-in-out) infinite;
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  .animate-float {
+    animation: float 3s var(--animate-ease-in-out) infinite;
+  }
+  .animate-bounce-subtle {
+    animation: bounceSubtle 2s var(--animate-ease-in-out) infinite;
+  }
+
+  /* Hover animations */
+  .hover\:animate-lift:hover {
+    transform: translateY(-2px);
+    transition: transform var(--animate-duration-fast) var(--animate-ease-out);
+  }
+  .hover\:animate-scale:hover {
+    transform: scale(1.05);
+    transition: transform var(--animate-duration-fast) var(--animate-ease-out);
+  }
+  .hover\:animate-shadow:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transition: box-shadow var(--animate-duration-fast) var(--animate-ease-out);
+  }
+
+  /* Staggered animations */
+  .animate-stagger > * {
+    opacity: 0;
+    animation: fadeIn var(--animate-duration-normal) var(--animate-ease-out) forwards;
+  }
+  .animate-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+  .animate-stagger > *:nth-child(2) { animation-delay: 0.1s; }
+  .animate-stagger > *:nth-child(3) { animation-delay: 0.15s; }
+  .animate-stagger > *:nth-child(4) { animation-delay: 0.2s; }
+  .animate-stagger > *:nth-child(5) { animation-delay: 0.25s; }
+  .animate-stagger > *:nth-child(6) { animation-delay: 0.3s; }
+  .animate-stagger > *:nth-child(7) { animation-delay: 0.35s; }
+  .animate-stagger > *:nth-child(8) { animation-delay: 0.4s; }
+
+  /* Dark mode variants */
+  .dark .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  }
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes scaleOut {
+  from { transform: scale(1); opacity: 1; }
+  to { transform: scale(0.95); opacity: 0; }
+}
+@keyframes pulseSoft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes bounceSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* Page transitions */
+.page-enter-active {
+  transition: all var(--animate-duration-normal) var(--animate-ease-out);
+}
+.page-leave-active {
+  transition: all var(--animate-duration-normal) var(--animate-ease-in);
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+/* Layout transitions */
+.layout-enter-active {
+  transition: all var(--animate-duration-slow) var(--animate-ease-out);
+}
+.layout-enter-from {
+  opacity: 0;
+}
+
+/* Component micro-interactions */
+.button-press {
+  transition: all var(--animate-duration-fast) var(--animate-ease-out);
+}
+.button-press:active {
+  transform: scale(0.98);
+}
+
+/* Loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, var(--color-zinc-200) 25%, var(--color-zinc-300) 50%, var(--color-zinc-200) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.dark .loading-skeleton {
+  background: linear-gradient(90deg, var(--color-zinc-800) 25%, var(--color-zinc-700) 50%, var(--color-zinc-800) 75%);
+}
+
+/* Focus states */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 focus:ring-offset-zinc-50 dark:focus:ring-zinc-500 dark:focus:ring-offset-zinc-950;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-zinc-100);
+  border-radius: 3px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--color-zinc-800);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-400);
+  border-radius: 3px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-600);
+}
