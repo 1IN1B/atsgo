@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -10,10 +11,10 @@ import {
   FileText,
   BarChart3,
   Settings,
-  ChevronLeft,
   ChevronRight,
   LogOut,
 } from "lucide-react";
+import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -31,7 +32,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (status === "loading") {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <div className="text-zinc-400 text-sm">Loading...</div>
+        <motion.div
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-zinc-400 text-sm"
+        >
+          Loading...
+        </motion.div>
       </div>
     );
   }
@@ -39,77 +46,149 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!session) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-zinc-400 text-sm">Redirecting...</p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-zinc-400 text-sm"
+        >
+          Redirecting...
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-1 h-screen overflow-hidden">
-      <aside
-        className={`flex flex-col bg-sidebar-bg text-sidebar-text transition-all duration-200 ${
-          collapsed ? "w-16" : "w-56"
-        }`}
+      <motion.aside
+        initial={{ x: -100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1, width: collapsed ? 64 : 224 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="flex flex-col bg-sidebar-bg text-sidebar-text"
       >
         <div className="flex items-center gap-2 px-4 py-4 h-14 border-b border-sidebar-hover">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+          <motion.div whileHover={{ scale: 1.05, rotate: 5 }} className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <span className="text-white font-bold text-sm">A</span>
-          </div>
-          {!collapsed && <span className="font-semibold text-lg">ATSGO</span>}
+          </motion.div>
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+                className="font-semibold text-lg overflow-hidden whitespace-nowrap"
+              >
+                ATSGO
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
-        <nav className="flex flex-col gap-1 px-2 py-4 flex-1">
-          {navItems.map((item) => {
+        <motion.nav
+          variants={staggerContainer}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-col gap-1 px-2 py-4 flex-1"
+        >
+          {navItems.map((item, i) => {
             const Icon = item.icon;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors text-sm ${
-                  collapsed ? "justify-center" : ""
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </Link>
+              <motion.div key={item.href} variants={fadeInUp} custom={i}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors text-sm ${
+                    collapsed ? "justify-center" : ""
+                  }`}
+                >
+                  <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
+                    <Icon className="w-4 h-4 shrink-0" />
+                  </motion.div>
+                  <AnimatePresence>
+                    {!collapsed && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden whitespace-nowrap"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              </motion.div>
             );
           })}
-        </nav>
+        </motion.nav>
 
         <div className="border-t border-sidebar-hover px-2 py-3">
           <div className={`flex items-center gap-3 px-3 py-2 ${collapsed ? "justify-center" : ""}`}>
-            <div className="w-8 h-8 rounded-full bg-sidebar-hover flex items-center justify-center shrink-0 text-xs font-medium">
+            <motion.div whileHover={{ scale: 1.1 }} className="w-8 h-8 rounded-full bg-sidebar-hover flex items-center justify-center shrink-0 text-xs font-medium">
               {session.user?.name?.charAt(0).toUpperCase() || "U"}
-            </div>
-            {!collapsed && (
-              <div className="flex flex-col min-w-0">
-                <span className="text-sm truncate">{session.user?.name}</span>
-                <span className="text-xs text-zinc-500 truncate">{session.user?.email}</span>
-              </div>
-            )}
+            </motion.div>
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col min-w-0 overflow-hidden"
+                >
+                  <span className="text-sm truncate">{session.user?.name}</span>
+                  <span className="text-xs text-zinc-500 truncate">{session.user?.email}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <button
+          <motion.button
             onClick={() => signOut({ callbackUrl: "/login" })}
+            whileHover={{ scale: 1.02, x: 2 }}
+            whileTap={{ scale: 0.98 }}
             className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors text-sm w-full mt-1 ${
               collapsed ? "justify-center" : ""
             }`}
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            {!collapsed && <span>Log out</span>}
-          </button>
+            <AnimatePresence>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  Log out
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
         </div>
 
-        <button
+        <motion.button
           onClick={() => setCollapsed(!collapsed)}
+          whileHover={{ scale: 1.2 }}
+          whileTap={{ scale: 0.8 }}
           className="flex items-center justify-center py-2 hover:bg-sidebar-hover transition-colors border-t border-sidebar-hover"
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
-      </aside>
+          <motion.div
+            animate={{ rotate: collapsed ? 0 : 180 }}
+            transition={{ duration: 0.3 }}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </motion.div>
+        </motion.button>
+      </motion.aside>
 
-      <main className="flex flex-col flex-1 overflow-auto bg-white dark:bg-[#0a0a0a]">
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
+        className="flex flex-col flex-1 overflow-auto bg-white dark:bg-[#0a0a0a]"
+      >
         {children}
-      </main>
+      </motion.main>
     </div>
   );
 }
