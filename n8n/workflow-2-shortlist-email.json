@@ -1,0 +1,63 @@
+{
+  "name": "ATSGO — Candidate Shortlisted → Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atsgo-candidate-shortlisted",
+        "responseMode": "onReceived",
+        "responseData": "={{ JSON.stringify({ received: true }) }}",
+        "options": {}
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000001",
+      "name": "Webhook — Shortlisted Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "atsgo-candidate-shortlisted"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract candidate from ATSGO webhook payload\n// Payload shape: { event: 'candidate.shortlisted', payload: { ...candidate }, timestamp }\nconst body = $input.first().json.body || $input.first().json;\nconst candidate = body.payload || body;\n\nreturn [{\n  json: {\n    id: candidate.id,\n    name: candidate.name,\n    email: candidate.email,\n    jobTitle: candidate.jobTitle || 'the role',\n    skills: Array.isArray(candidate.skills) ? candidate.skills.join(', ') : candidate.skills || ''\n  }\n}];"
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000002",
+      "name": "Extract Candidate Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=You've been shortlisted! 🎉 — {{ $json.jobTitle }}",
+        "emailType": "html",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"background: #4f46e5; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 24px;\">Great news, {{ $json.name }}! 🎉</h1>\n  </div>\n  <div style=\"background: #ffffff; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; padding: 32px;\">\n    <p style=\"color: #374151; font-size: 16px; line-height: 1.6;\">\n      We're thrilled to let you know that you've been <strong>shortlisted</strong> for the <strong>{{ $json.jobTitle }}</strong> position.\n    </p>\n    <p style=\"color: #374151; font-size: 16px; line-height: 1.6;\">\n      Our team was impressed by your profile and would love to move forward with the next steps of our hiring process.\n    </p>\n    <p style=\"color: #374151; font-size: 16px; line-height: 1.6;\">\n      You'll hear from us shortly with details about scheduling an interview. In the meantime, feel free to reply to this email if you have any questions.\n    </p>\n    <p style=\"color: #6b7280; font-size: 14px; margin-top: 32px;\">\n      Best regards,<br/>\n      The Hiring Team\n    </p>\n  </div>\n  <p style=\"color: #9ca3af; font-size: 12px; text-align: center; margin-top: 16px;\">\n    This is an automated message from our ATS. Please do not reply directly to this email.\n  </p>\n</div>",
+        "options": {}
+      },
+      "id": "c1b2c3d4-0003-0003-0003-000000000003",
+      "name": "Send Shortlist Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — Shortlisted Event": {
+      "main": [[{ "node": "Extract Candidate Data", "type": "main", "index": 0 }]]
+    },
+    "Extract Candidate Data": {
+      "main": [[{ "node": "Send Shortlist Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": [{ "name": "atsgo" }]
+}

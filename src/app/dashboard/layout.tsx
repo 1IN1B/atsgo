@@ -3,13 +3,13 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
   Briefcase,
-  FileText,
-  BarChart3,
+  Kanban,
   Settings,
   ChevronRight,
   LogOut,
@@ -19,15 +19,15 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Users, label: "Candidates", href: "/dashboard/candidates" },
+  { icon: Kanban, label: "Pipeline", href: "/dashboard/pipeline" },
   { icon: Briefcase, label: "Jobs", href: "/dashboard/jobs" },
-  { icon: FileText, label: "Applications", href: "/dashboard/applications" },
-  { icon: BarChart3, label: "Analytics", href: "/dashboard/analytics" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [collapsed, setCollapsed] = useState(false);
+  const pathname = usePathname();
 
   if (status === "loading") {
     return (
@@ -92,12 +92,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           {navItems.map((item, i) => {
             const Icon = item.icon;
+            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
             return (
               <motion.div key={item.href} variants={fadeInUp} custom={i}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-sidebar-hover transition-colors text-sm ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm ${
                     collapsed ? "justify-center" : ""
+                  } ${
+                    isActive
+                      ? "bg-primary text-white"
+                      : "hover:bg-sidebar-hover"
                   }`}
                 >
                   <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }}>
@@ -185,7 +190,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.4 }}
-        className="flex flex-col flex-1 overflow-auto bg-white dark:bg-[#0a0a0a]"
+        className="flex flex-col flex-1 overflow-auto bg-white dark:bg-[#0a0a0a] h-[100vh]"
       >
         {children}
       </motion.main>
