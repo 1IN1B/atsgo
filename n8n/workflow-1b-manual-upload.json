@@ -1,0 +1,127 @@
+{
+  "name": "ATSGO — Manual Upload → Candidate Profile",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atsgo-resume-upload",
+        "responseMode": "onReceived",
+        "responseData": "={{ JSON.stringify({ received: true }) }}",
+        "options": {
+          "binaryData": true
+        }
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000001",
+      "name": "Webhook — Receive PDF",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "atsgo-resume-upload"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find the PDF binary field in the incoming request\nconst item = $input.first();\nconst binaryKeys = Object.keys(item.binary || {});\nconst pdfKey = binaryKeys.find(k => {\n  const mime = item.binary[k].mimeType || '';\n  const name = (item.binary[k].fileName || '').toLowerCase();\n  return mime === 'application/pdf' || name.endsWith('.pdf');\n}) || binaryKeys[0];\n\nif (!pdfKey) throw new Error('No PDF found in upload');\n\nreturn [{\n  json: {\n    ...item.json,\n    _pdfBinaryKey: pdfKey,\n    _fileName: item.binary[pdfKey].fileName || 'resume.pdf'\n  },\n  binary: item.binary\n}];"
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000002",
+      "name": "Identify PDF Field",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "={{ $json._pdfBinaryKey }}"
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000003",
+      "name": "Extract PDF Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer REPLACE_WITH_YOUR_OPENAI_API_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"gpt-4o-mini\",\n  \"response_format\": { \"type\": \"json_object\" },\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a resume parser. Extract information from the resume text and return ONLY a JSON object with these fields: name (string), email (string), phone (string or null), skills (array of strings, max 10), summary (one sentence about the candidate), jobTitle (most recent job title or applied role).\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($json.text || $json.data || '') }}\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000004",
+      "name": "Parse Resume with GPT-4o-mini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst content = response.choices[0].message.content;\nlet parsed;\ntry {\n  parsed = JSON.parse(content);\n} catch(e) {\n  parsed = { name: 'Unknown', email: '', skills: [], summary: '' };\n}\n\nconst fileName = $('Identify PDF Field').first().json._fileName || 'resume.pdf';\n\nreturn [{\n  json: {\n    name: parsed.name || 'Unknown',\n    email: parsed.email || '',\n    phone: parsed.phone || null,\n    skills: Array.isArray(parsed.skills) ? parsed.skills : [],\n    summary: parsed.summary || '',\n    resumeFileName: fileName,\n    source: 'manual',\n    status: 'applied'\n  }\n}];"
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000005",
+      "name": "Build Candidate Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/api/candidates",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "b1b2c3d4-0002-0002-0002-000000000006",
+      "name": "Create Candidate in ATSGO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — Receive PDF": {
+      "main": [[{ "node": "Identify PDF Field", "type": "main", "index": 0 }]]
+    },
+    "Identify PDF Field": {
+      "main": [[{ "node": "Extract PDF Text", "type": "main", "index": 0 }]]
+    },
+    "Extract PDF Text": {
+      "main": [[{ "node": "Parse Resume with GPT-4o-mini", "type": "main", "index": 0 }]]
+    },
+    "Parse Resume with GPT-4o-mini": {
+      "main": [[{ "node": "Build Candidate Object", "type": "main", "index": 0 }]]
+    },
+    "Build Candidate Object": {
+      "main": [[{ "node": "Create Candidate in ATSGO", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": [{ "name": "atsgo" }]
+}

@@ -1,0 +1,136 @@
+{
+  "name": "ATSGO — Interview Scheduled → Google Meet + Email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "atsgo-interview-scheduled",
+        "responseMode": "onReceived",
+        "responseData": "={{ JSON.stringify({ received: true }) }}",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000001",
+      "name": "Webhook — Interview Scheduled",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "atsgo-interview-scheduled"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract candidate + interview details from ATSGO webhook payload\n// Payload shape: { event: 'candidate.interview_scheduled', payload: { ...candidate, interviewAt }, timestamp }\nconst body = $input.first().json.body || $input.first().json;\nconst candidate = body.payload || body;\n\nconst interviewAt = new Date(candidate.interviewAt);\nconst endTime = new Date(interviewAt.getTime() + 60 * 60 * 1000); // +1 hour\n\nreturn [{\n  json: {\n    id: candidate.id,\n    name: candidate.name,\n    email: candidate.email,\n    jobTitle: candidate.jobTitle || 'the role',\n    interviewAt: candidate.interviewAt,\n    interviewAtFormatted: interviewAt.toLocaleString('en-US', {\n      weekday: 'long', year: 'numeric', month: 'long',\n      day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'\n    }),\n    startTime: interviewAt.toISOString(),\n    endTime: endTime.toISOString()\n  }\n}];"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000002",
+      "name": "Extract Interview Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{ $json.startTime }}",
+        "end": "={{ $json.endTime }}",
+        "additionalFields": {
+          "summary": "=Interview — {{ $json.name }} ({{ $json.jobTitle }})",
+          "description": "=Interview with {{ $json.name }} for the {{ $json.jobTitle }} position.\n\nCandidate email: {{ $json.email }}\n\nThis event was automatically created by ATSGO.",
+          "attendees": "={{ $json.email }}",
+          "conferenceDataVersion": 1,
+          "sendUpdates": "all"
+        }
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000003",
+      "name": "Create Google Calendar Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_GOOGLE_CALENDAR_CREDENTIAL_ID",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract Google Meet link from created Calendar event\nconst calEvent = $input.first().json;\nconst meetLink = calEvent.hangoutLink\n  || calEvent.conferenceData?.entryPoints?.find(e => e.entryPointType === 'video')?.uri\n  || null;\n\nconst interviewDetails = $('Extract Interview Details').first().json;\n\nreturn [{\n  json: {\n    ...interviewDetails,\n    meetLink: meetLink,\n    calendarEventId: calEvent.id\n  }\n}];"
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000004",
+      "name": "Extract Meet Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "=Your interview is confirmed — {{ $json.jobTitle }} 📅",
+        "emailType": "html",
+        "message": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;\">\n  <div style=\"background: #4f46e5; padding: 24px; border-radius: 12px 12px 0 0; text-align: center;\">\n    <h1 style=\"color: white; margin: 0; font-size: 24px;\">Interview Confirmed! 📅</h1>\n  </div>\n  <div style=\"background: #ffffff; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px; padding: 32px;\">\n    <p style=\"color: #374151; font-size: 16px; line-height: 1.6;\">Hi {{ $json.name }},</p>\n    <p style=\"color: #374151; font-size: 16px; line-height: 1.6;\">\n      Your interview for the <strong>{{ $json.jobTitle }}</strong> position has been scheduled!\n    </p>\n    <div style=\"background: #f3f4f6; border-radius: 8px; padding: 16px; margin: 24px 0;\">\n      <p style=\"margin: 0 0 8px 0; color: #6b7280; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;\">📅 Date &amp; Time</p>\n      <p style=\"margin: 0; color: #111827; font-size: 16px; font-weight: 600;\">{{ $json.interviewAtFormatted }}</p>\n    </div>\n    {{ $json.meetLink ? `<div style=\"text-align: center; margin: 24px 0;\">\n      <a href=\"${$json.meetLink}\" style=\"display: inline-block; background: #4f46e5; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;\">🎥 Join Google Meet</a>\n      <p style=\"margin: 12px 0 0 0; color: #6b7280; font-size: 13px;\">${$json.meetLink}</p>\n    </div>` : '' }}\n    <p style=\"color: #374151; font-size: 14px; line-height: 1.6; margin-top: 24px;\">\n      A calendar invite has been sent to your email. Please accept it to confirm your attendance.\n    </p>\n    <p style=\"color: #374151; font-size: 14px; line-height: 1.6;\">\n      If you have any questions or need to reschedule, please reply to this email.\n    </p>\n    <p style=\"color: #6b7280; font-size: 14px; margin-top: 32px;\">\n      Best regards,<br/>\n      The Hiring Team\n    </p>\n  </div>\n</div>",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000005",
+      "name": "Send Interview Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://localhost:3000/api/candidates/{{ $json.id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"meetLink\": \"{{ $json.meetLink }}\"\n}",
+        "options": {}
+      },
+      "id": "d1b2c3d4-0004-0004-0004-000000000006",
+      "name": "Store Meet Link in ATSGO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1340, 300]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook — Interview Scheduled": {
+      "main": [[{ "node": "Extract Interview Details", "type": "main", "index": 0 }]]
+    },
+    "Extract Interview Details": {
+      "main": [[{ "node": "Create Google Calendar Event", "type": "main", "index": 0 }]]
+    },
+    "Create Google Calendar Event": {
+      "main": [[{ "node": "Extract Meet Link", "type": "main", "index": 0 }]]
+    },
+    "Extract Meet Link": {
+      "main": [[{ "node": "Send Interview Email", "type": "main", "index": 0 }]]
+    },
+    "Send Interview Email": {
+      "main": [[{ "node": "Store Meet Link in ATSGO", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": false },
+  "tags": [{ "name": "atsgo" }]
+}
